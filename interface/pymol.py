@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import pymol
+# import pymol
+import numpy
 from colorsys import hsv_to_rgb
 from pymol import cmd
 '''
@@ -95,6 +96,29 @@ def bond_connections(clusters, interactions):
                         cmd.bond(a, b)
                         strength = 1.0 if maximum == minimum else 0.1 + (0.9 * ((interactions[resa][resb][0] - minimum) / (maximum - minimum)))
                         cmd.set_bond("stick_radius", strength, a, b)
+
+
+def bond_connections_from_array(interactiongraph, residuemap, cutoff=0.0):
+    minimum = numpy.min(interactiongraph)
+    maximum = numpy.max(interactiongraph)
+    residues = list(residuemap.keys())
+    shown = []
+    for i in range(interactiongraph.shape[0]):
+        for j in range(i, interactiongraph.shape[1]):
+            # Only draw bonds if interaction strength over cutoff threshold
+            if interactiongraph[i][j] > cutoff:
+                resa = residues[i]
+                resb = residues[j]
+                shown.append(resa)
+                shown.append(resb)
+                a = "chain {} and resi {} and name CA".format(
+                    resa.split(':')[0], resa.split(':')[1][1:])
+                b = "chain {} and resi {} and name CA".format(
+                    resb.split(':')[0], resb.split(':')[1][1:])
+                cmd.bond(a, b)
+                strength = 1.0 if maximum == minimum else 0.1 + (0.9 * ((interactiongraph[i][j] - minimum) / (maximum - minimum)))
+                cmd.set_bond("stick_radius", strength, a, b)
+    return shown
 
 
 def show_cluster(clusters):

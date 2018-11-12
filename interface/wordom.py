@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 from collections import OrderedDict
 from ..internal.map import Map
 '''
@@ -91,7 +92,7 @@ def read_avg_residuemap(infile):
     """
     m_start = re.compile("^\*\*\* Seq \*\*\*")
     m_end = re.compile("^============")
-    m_entry = re.compile("^\s*\d+\s+.:\d+\s+.:.\d+\s*$")
+    m_entry = re.compile("^\s*\d+\s+.:.\d+\s+\d+\.\d+\s*$")
     residuemap = OrderedDict()
     reading = False
     for line in infile:
@@ -101,12 +102,46 @@ def read_avg_residuemap(infile):
                 break
             else:
                 if m_entry.search(line):
-                    [num, resname, reslongname] = line.split()
-                    residuemap[resname] = int(num) - 1
+                    [num, resname, normfact] = line.split()
+                    residuemap[resname] = int(num)
         # Start reading when header found
         elif m_start.search(line):
             reading = True
     return residuemap
+
+
+def read_correlations(infile):
+    """read correlations from WORDOM cross-correlation analysis file
+    written by B.W., edited by R.P.
+
+    :param infile: WORDOM corrs-correlation file handle
+    :return: Pandas symmetric dataframe
+    """
+    corr_dict = OrderedDict()
+    for line in infile:
+        if line.startswith("#"):
+            continue
+
+        # Parse
+        line = line.rstrip().lstrip()
+        (i,j,resi,resj,corr)=line.split()
+
+        # Ensure Pandas dataframe sorting correctly
+        i = int(i)
+        j = int(j)
+
+        # Initialize
+        if not i in corr_dict:
+            corr_dict[i]=OrderedDict()
+        if not j in corr_dict:
+            corr_dict[j]=OrderedDict()
+
+        # Assign
+        corr_dict[i][j] = corr_dict[j][i] = float(corr)
+
+    df = pd.DataFrame.from_dict(corr_dict,orient='index')
+
+    return(df)
 
 
 def get_chain_offsets(chainlist, chainlength, chainpadding):
