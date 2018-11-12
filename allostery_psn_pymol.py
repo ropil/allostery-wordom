@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+if __name__ == "__main__" and __package__ == None:
+    __package__ = "allostery-wordom"
+print(__package__)
+
+#import __main__
+#__main__.pymol_argv = [ 'pymol' ]
+
+#import pymol2
 import pymol
 from pymol import cmd
 
@@ -45,26 +53,34 @@ def main():
     parser = ArgumentParser(
         description="Open and display a WORDOM PSN cluster analysis in PyMOL.")
     parser.add_argument(
-        "-c", nargs=1, default=[None], metavar="float",
-        help="Cutoff to use (must be present in AVGfile)" +
+        "-i", nargs=1, default=[None], metavar="float",
+        help="Imin to use (must be present in AVGfile)" +
+        ", default=Use lowest found")
+    parser.add_argument(
+        "-f", nargs=1, default=[None], metavar="float",
+        help="Freq to use (must be present for selected Imin)" +
         ", default=Use lowest found")
     parser.add_argument(
         "-show", nargs=1, default=[None], metavar="int[,int[...]]",
         help="Show specified clusters")
     parser.add_argument(
-        "avg", nargs=1, metavar="AVGfile",
+        "-avg", nargs=1, metavar="AVGfile",
         help="Wordom PSN avg file")
     parser.add_argument(
-        "pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
+        "-pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
     arguments = parser.parse_args(argv[1:])
 
     # Finish pymol launch
-    pymol.finish_launching()
+    pymol.finish_launching(['pymol'])
+    #pymol = pymol2.PyMOL()
+    #pymol.start()
+
 
     # Set variables here
     pdb = arguments.pdb[0]
     avg = arguments.avg[0]
-    cut = arguments.c[0]
+    imin = arguments.i[0]
+    freq = arguments.f[0]
     shw = arguments.show[0]
 
     interactions = {}
@@ -74,22 +90,35 @@ def main():
         infile.seek(0)
         clusters = read_avg_clusters(infile)
 
-    # Select the cutoff
-    if cut is not None:
+    # Select the Imin cutoff
+    if imin is not None:
         # If provided
-        cut = float(cut)
+        imin = float(imin)
     else:
         # Default
-        cutoffs = list(clusters.keys())
-        cutoffs.sort()
-        cut = cutoffs[0]
+        imins = list(clusters.keys())
+        imins.sort()
+        imin = imins[0]
+
+    # Select the Freq cutoff
+    if freq is not None:
+        # If provided
+        freq = float(freq)
+    else:
+        # Default
+        freqs = list(clusters[imin].keys())
+        freqs.sort()
+        freq = freqs[0]
 
     # Select clusters
-    clusters = clusters[cut]
+    clusters = clusters[imin][freq]
 
     cmd.load(pdb)
     cmd.hide("everything")
     cmd.show("ribbon")
+    #pymol.cmd.load(pdb)
+    #pymol.cmd.hide("everything")
+    #pymol.cmd.show("ribbon")
 
     # Create bindings and selections, and color them
     bond_connections(clusters, interactions)

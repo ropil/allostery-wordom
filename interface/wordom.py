@@ -25,8 +25,8 @@ def read_avg_strength(infile):
     :param infile: File handle pointing to WORDOM avgpsn output file
     """
     m_start = re.compile("^\*\*\* Averaged Interaction Strength \*\*\*")
-    m_end = re.compile("^========================")
-    m_entry = re.compile("^\s+.:\d+\s+.:\d+\s+\d+\.\d+\s*$")
+    m_end = re.compile("^===")
+    m_entry = re.compile("^\s*.:.\d+\s+.:.\d+\s+\d+\.\d+\s+\d+\.\d+\s*$")
     interactions = {}
     reading = False
     for line in infile:
@@ -36,13 +36,13 @@ def read_avg_strength(infile):
                 break
             else:
                 if m_entry.search(line):
-                    [a, b, strength] = line.split()
+                    [a, b, strength, freq] = line.split()
                     if not a in interactions:
                         interactions[a] = {}
                     if not b in interactions:
                         interactions[b] = {}
                     # Assign symmetrically
-                    interactions[a][b] = interactions[b][a] = float(strength)
+                    interactions[a][b] = interactions[b][a] = (float(strength), float(freq))
         # Start reading when header found
         elif m_start.search(line):
             reading = True
@@ -55,12 +55,14 @@ def read_avg_clusters(infile):
     :param infile: File handle pointing to WORDOM avgpsn output file
     """
     m_start = re.compile("^\*\*\* Stable Cluster Compositions \*\*\*")
-    m_new = re.compile("^Imin:")
-    m_end = re.compile("^========================")
+    m_imin = re.compile("^Imin:")
+    m_freq = re.compile("^Freq:")
+    m_end = re.compile("^===")
     m_entry = re.compile("^C\s*\d+:")
     reading = False
     clusters = {}
-    current = None
+    current_imin = None
+    current_freq = None
     for line in infile:
         if reading:
             if m_end.search(line):
@@ -68,11 +70,13 @@ def read_avg_clusters(infile):
             else:
                 if m_entry.search(line):
                     entries = ":".join(line.split(':')[1:])
-                    # cluster = int(line.split(':')[0][1:])
-                    clusters[current].append(entries.split())
-                elif m_new.search(line):
-                    current = float(line.split()[1])
-                    clusters[current] = []
+                    clusters[current_imin][current_freq].append(entries.split())
+                elif m_imin.search(line):
+                    current_imin = float(line.split()[1])
+                    clusters[current_imin] = {}
+                elif m_freq.search(line):
+                    current_freq = float(line.split()[1])
+                    clusters[current_imin][current_freq] = []
         elif m_start.search(line):
             reading = True
     return clusters

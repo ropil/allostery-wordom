@@ -46,15 +46,40 @@ def select_clusters(clusters):
     for [cluster, cnum] in zip(clusters, range(len(clusters))):
         residues = []
         for resi in cluster:
+            # Expect residues on format C:AX, with C & A char and X int
             residues.append("(chain {} and resi {})".format(
-                resi.split(':')[0], resi.split(':')[1]))
+                resi.split(':')[0], resi.split(':')[1][1:]))
         residues = " or ".join(residues)
         clusternames.append("c{:>02d}".format(cnum))
-        cmd.select(clusternames[-1], "({}) and name CA".format(residues))
+        selection = "({}) and name CA".format(residues)
+        cmd.select(clusternames[-1], selection)
     return clusternames
 
 
 def bond_connections(clusters, interactions):
+    # Quickfix - find min and max
+    # this filtering should be done before supplying to this function
+    # That is, the "interactions" data should be already formatted
+    # as a float in a way that makes it look nice with bond 
+    # stick_radius
+    minimum = None
+    maximum = None
+    for cluster in clusters:
+        for i in range(len(cluster)):
+            for j in range(i, len(cluster)):
+                resa = cluster[i]
+                resb = cluster[j]
+                if resa in interactions:
+                    if resb in interactions[resa]:
+                        strength = interactions[resa][resb][0]
+                        if minimum is None:
+                            minimum = strength
+                        else:
+                            minimum = strength if minimum > strength else minimum
+                        if maximum is None:
+                            maximum = strength
+                        else: 
+                            maximum = strength if maximum < strength else maximum
     for cluster in clusters:
         for i in range(len(cluster)):
             for j in range(i, len(cluster)):
@@ -64,20 +89,19 @@ def bond_connections(clusters, interactions):
                 if resa in interactions:
                     if resb in interactions[resa]:
                         a = "chain {} and resi {} and name CA".format(
-                            resa.split(':')[0], resa.split(':')[1])
+                            resa.split(':')[0], resa.split(':')[1][1:])
                         b = "chain {} and resi {} and name CA".format(
-                            resb.split(':')[0], resb.split(':')[1])
+                            resb.split(':')[0], resb.split(':')[1][1:])
                         cmd.bond(a, b)
-                        cmd.set_bond("line_width",
-                                     1.0 + interactions[resa][resb],
-                                     a, b)
+                        strength = 1.0 if maximum == minimum else 0.1 + (0.9 * ((interactions[resa][resb][0] - minimum) / (maximum - minimum)))
+                        cmd.set_bond("stick_radius", strength, a, b)
 
 
 def show_cluster(clusters):
     for cluster in clusters:
         for resi in cluster:
             sele = "chain {} and resi {} and name CA".format(
-                resi.split(':')[0], resi.split(':')[1])
-            cmd.show("lines", sele)
+                resi.split(':')[0], resi.split(':')[1][1:])
+            cmd.show("sticks", sele)
             cmd.show("spheres", sele)
 
