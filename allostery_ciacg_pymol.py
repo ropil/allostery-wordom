@@ -15,7 +15,7 @@ import numpy
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 '''
- Display the icACG in an interactive PyMOL session
+ Display the ciACG in an interactive PyMOL session
  Copyright (C) 2018  Robert Pilstål
 
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -35,7 +35,7 @@ from pandas import DataFrame
 # Version and license information
 def get_version_str():
     return "\n".join([
-        "allostery_icacg_pymol  Copyright (C) 2018  Robert Pilstål;",
+        "allostery_ciacg_pymol  Copyright (C) 2018  Robert Pilstål;",
         "This program comes with ABSOLUTELY NO WARRANTY.",
         "This is free software, and you are welcome to redistribute it",
         "under certain conditions; See the supplied Apache License,",
@@ -45,35 +45,27 @@ def get_version_str():
     ])
 
 
+# Library functions
+#def get_cutoffs(cutoffs):
+    #return [float(cutoff) for cutoff in cutoffs.split(',')]
+
+
 # Main; for callable scripts
 def main():
     from argparse import ArgumentParser
     from sys import argv
     parser = ArgumentParser(
         description= "Open and display a WORDOM PSN and cross correlation " +
-                     "analysis as an interaction-correlation Allosteric " +
-                     "Communication Graph (icACG) in PyMOL."
+                     "analysis as an correlated interaction Allosteric " +
+                     "Communication Graph (ciACG) in PyMOL."
     )
     parser.add_argument(
-        "-i",
-        nargs=1,
-        default=[None],
-        metavar="float",
-        help="Imin to use (must be present in AVGfile)" +
-        ", default=Use lowest found")
-    parser.add_argument(
-        "-f",
-        nargs=1,
-        default=[None],
-        metavar="float",
-        help="Freq to use (must be present for selected Imin)" +
-        ", default=Use lowest found")
-    parser.add_argument(
         "-c",
-        nargs=1,
+        nargs='*',
         default=[0.0],
         metavar="float",
-        help="Cutoff to use for showing connections in graph" +
+        help="Cutoff to use for showing connections in graph, provide" +
+        " white space separated list for a series of cutoffs."
         ", default=0.0")
     parser.add_argument(
         "-avg", nargs=1, metavar="AVGfile", help="Wordom PSN avg file")
@@ -84,7 +76,7 @@ def main():
         help="Wordom cross-correlation file")
     parser.add_argument(
         "-pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
-    parser.add_argument("-plot", action="store_true", default=False, help="Plot icACG value distribution")
+    parser.add_argument("-plot", action="store_true", default=False, help="Plot ciACG value distribution")
     arguments = parser.parse_args(argv[1:])
 
     # Finish pymol launch
@@ -94,10 +86,8 @@ def main():
     pdb = arguments.pdb[0]
     avg = arguments.avg[0]
     cor = arguments.cor[0]
-    cutoff = float(arguments.c[0])
-    imin = arguments.i[0]
-    freq = arguments.f[0]
-    icplot = arguments.plot
+    cutoffs = [float(c) for c in arguments.c]
+    ciplot = arguments.plot
 
     interactions = {}
     with open(avg, 'r') as infile:
@@ -113,11 +103,11 @@ def main():
 
     correlation = matrix_from_pandas_dataframe(correlation_table)
 
-    icgraph = strength * correlation
+    cigraph = strength * correlation
 
-    if icplot:
+    if ciplot:
          plt.figure()
-         df = DataFrame({'a': icgraph.reshape(icgraph.shape[0] * icgraph.shape[1])}, columns=['a'])
+         df = DataFrame({'a': cigraph.reshape(cigraph.shape[0] * cigraph.shape[1])}, columns=['a'])
          df.plot.hist(stacked=True)
          plt.show()
 
@@ -126,12 +116,15 @@ def main():
     cmd.show("ribbon")
 
     # Create bindings and selections, and color them
-    residues = bond_connections_from_array(icgraph, residuemap, cutoff=cutoff)
-    selections = select_clusters([residues])
+    levels = []
+    for cutoff in cutoffs:
+        residues = bond_connections_from_array(cigraph, residuemap, cutoff=cutoff)
+        levels.append(residues)
+    selections = select_clusters(levels)
     colors = color_selections(selections)
 
     # Show clusters
-    show_cluster([residues])
+    show_cluster(levels)
 
 
 if __name__ == '__main__':

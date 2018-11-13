@@ -99,14 +99,17 @@ def bond_connections(clusters, interactions):
 
 
 def bond_connections_from_array(interactiongraph, residuemap, cutoff=0.0):
-    minimum = numpy.min(interactiongraph)
-    maximum = numpy.max(interactiongraph)
+    # Make strength be proportional to girth of bonds
+    graph = numpy.sqrt(numpy.absolute(interactiongraph))
+    # Simple min-max scaling parameters
+    minimum = numpy.min(graph)
+    maximum = numpy.max(graph)
     residues = list(residuemap.keys())
     shown = []
-    for i in range(interactiongraph.shape[0]):
-        for j in range(i, interactiongraph.shape[1]):
+    for i in range(graph.shape[0]):
+        for j in range(i, graph.shape[1]):
             # Only draw bonds if interaction strength over cutoff threshold
-            if interactiongraph[i][j] > cutoff:
+            if graph[i][j] > cutoff:
                 resa = residues[i]
                 resb = residues[j]
                 shown.append(resa)
@@ -116,7 +119,7 @@ def bond_connections_from_array(interactiongraph, residuemap, cutoff=0.0):
                 b = "chain {} and resi {} and name CA".format(
                     resb.split(':')[0], resb.split(':')[1][1:])
                 cmd.bond(a, b)
-                strength = 1.0 if maximum == minimum else 0.1 + (0.9 * ((interactiongraph[i][j] - minimum) / (maximum - minimum)))
+                strength = 1.0 if maximum == minimum else 0.1 + (0.9 * ((graph[i][j] - minimum) / (maximum - minimum)))
                 cmd.set_bond("stick_radius", strength, a, b)
     return shown
 
