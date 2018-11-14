@@ -5,10 +5,6 @@ if __name__ == "__main__" and __package__ is None:
 import pymol
 from pymol import cmd
 
-from .interface.pymol import (bond_connections_from_array, color_selections,
-                              select_clusters, show_cluster)
-# from .interface.wordom import read_pathway
-from .internal.matrix import matrix_from_interactions, matrix_from_pandas_dataframe
 from .internal.procedure import draw_ciacg
 
 import numpy
