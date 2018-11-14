@@ -14,6 +14,8 @@ from .internal.matrix import matrix_from_interactions, matrix_from_pandas_datafr
 import numpy
 import matplotlib.pyplot as plt
 from pandas import DataFrame
+
+from pickle import dump, HIGHEST_PROTOCOL
 '''
  Display the ciACG in an interactive PyMOL session
  Copyright (C) 2018  Robert Pilstål
@@ -77,6 +79,10 @@ def main():
     parser.add_argument(
         "-pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
     parser.add_argument("-plot", action="store_true", default=False, help="Plot ciACG value distribution")
+    parser.add_argument(
+        "-acg", nargs=1, default=[None], metavar="ACGOUTfile", help="ACG file to write (.npy)")
+    parser.add_argument(
+        "-rmp", nargs=1, default=[None], metavar="RESOUTfile", help="ResidueMap output file to write (.rmp)")
     arguments = parser.parse_args(argv[1:])
 
     # Finish pymol launch
@@ -88,6 +94,8 @@ def main():
     cor = arguments.cor[0]
     cutoffs = [float(c) for c in arguments.c]
     ciplot = arguments.plot
+    acgout = arguments.acg[0]
+    rmpout = arguments.rmp[0]
 
     interactions = {}
     with open(avg, 'r') as infile:
@@ -104,6 +112,17 @@ def main():
     correlation = matrix_from_pandas_dataframe(correlation_table)
 
     cigraph = strength * correlation
+
+    if acgout is not None:
+        numpy.save(acgout, cigraph)
+
+    if rmpout is not None:
+        outfilename = rmpout
+        # Add proper file ending if not present
+        if rmpout.split('.')[-1] != "rmp":
+            outfilename += ".rmp"
+        with open(outfilename, 'wb') as output:
+            dump(residuemap, output, HIGHEST_PROTOCOL)
 
     if ciplot:
          plt.figure()
