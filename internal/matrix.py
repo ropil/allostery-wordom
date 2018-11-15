@@ -1,4 +1,4 @@
-from numpy import zeros
+from numpy import around, divide, multiply, subtract, zeros
 
 '''
  <Decription here>
@@ -46,3 +46,35 @@ def matrix_from_pandas_dataframe(pddframe):
     :param pddframe: pandas dataframe
     """
     return pddframe.values
+
+
+def matrix_to_colorarray(matrix, hue = (1.0, 0.0, 0.0), channel_max = 255.0):
+    """Converts a matrix into a color channel array
+
+    :param matrix: matrix to convert
+    :param hue: tuple of hue-values, default three with first channel
+                1.0 and the rest 0.
+    :param channel_max: Maximum level of channel, default 255.0
+    :return: array with first dimension being number of channels,
+             providing one matrix per channel over the other
+             dimensions
+    """
+    rgb_matrix = zeros((len(hue), matrix.shape[0], matrix.shape[1]))
+
+    print(matrix)
+
+    # Find max, min and span
+    element_min = matrix.min()
+    element_max = matrix.max()
+    element_range = element_max - element_min
+
+    print("Minimum = {}, Maximum = {}, span = {}".format(element_min, element_max, element_range))
+
+    # Normalize matrix between 0.0 and 1.0
+    normed_matrix = divide(subtract(matrix, element_min), element_range)
+
+    # Calculate rgb channels using specified "hue", rounding off
+    for i in range(len(hue)):
+        rgb_matrix[i,:,:] = around(multiply(normed_matrix, hue[i] * channel_max))
+
+    return rgb_matrix

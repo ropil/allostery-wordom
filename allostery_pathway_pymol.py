@@ -5,7 +5,8 @@ if __name__ == "__main__" and __package__ is None:
 import pymol
 from pymol import cmd
 
-from .internal.procedure import draw_ciacg, process_framefiles
+from .internal.procedure import draw_ciacg, highlight_pathways, process_framefiles
+from .internal.matrix import matrix_from_pandas_dataframe
 
 import numpy
 import matplotlib.pyplot as plt
@@ -93,11 +94,17 @@ def main():
 
     frequencies, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
 
+    print(frequencies)
+
     print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
+
+    pathways = matrix_from_pandas_dataframe(frequencies)
 
     # Draw the loaded ciACG
     levels = draw_ciacg(cigraph, residuemap, pdb, cutoffs)
 
+    # Highlight the pathways
+    rgb_matrix = highlight_pathways(pathways, residuemap)
 
 if __name__ == '__main__':
     main()
