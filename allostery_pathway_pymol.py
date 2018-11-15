@@ -5,7 +5,7 @@ if __name__ == "__main__" and __package__ is None:
 import pymol
 from pymol import cmd
 
-from .internal.procedure import draw_ciacg
+from .internal.procedure import draw_ciacg, process_framefiles
 
 import numpy
 import matplotlib.pyplot as plt
@@ -72,6 +72,8 @@ def main():
         "-acg", nargs=1, metavar="ACGfile", help="ACG file to read (.npy)")
     parser.add_argument(
         "-rmp", nargs=1, metavar="RMPfile", help="ResidueMap file to read (.rmp)")
+    parser.add_argument(
+        "frames", nargs='*', metavar="FRAMEfile", help="WORDOM .frame files to process")
     arguments = parser.parse_args(argv[1:])
 
     # Finish pymol launch
@@ -82,11 +84,16 @@ def main():
     cutoffs = [float(c) for c in arguments.c]
     acg = arguments.acg[0]
     rmp = arguments.rmp[0]
+    frames = arguments.frames
 
     cigraph = numpy.load(acg)
 
     with open(rmp, 'rb') as infile:
         residuemap = pickle.load(infile)
+
+    frequencies, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
+
+    print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
 
     # Draw the loaded ciACG
     levels = draw_ciacg(cigraph, residuemap, pdb, cutoffs)

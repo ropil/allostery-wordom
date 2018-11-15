@@ -1,5 +1,8 @@
 from pymol import cmd
+from collections import Counter
+from pandas import DataFrame
 from ..interface.pymol import bond_connections_from_array, select_clusters, color_selections, show_cluster
+from ..interface.wordom import read_pathway_edge_frequencies
 
 '''
  Internal procedures
@@ -44,3 +47,40 @@ def draw_ciacg(cigraph, residuemap, pdb, cutoffs):
     show_cluster(levels)
     
     return levels
+
+
+def process_framefiles(framefiles, residuemap):
+    """Procedure to read and normalize edge counts in multiple .frames
+
+    :param framefiles: list of strings with filenames to WORDOM .frame
+                       files
+    :param residuemap: dict with residue names to integer mappings
+    :return: Pandas dataframe of normalized edge counts, 
+             Counter of unique files processed,
+             Counter of frames discovered and processed,
+             Counter of unique start and endpoints discovered & proc.
+    """
+    files_processed = Counter()
+    frames_processed = Counter()
+    pathways_processed = Counter()
+    frequencies = DataFrame()
+
+    for frame in framefiles:
+        files_processed[frame] += 1
+        with open(frame, 'r') as infile:
+            new_frequencies, new_frames, new_pathways = read_pathway_edge_frequencies(infile, residuemap)
+            frequencies.add(new_frequencies)
+            frames_processed += new_frames
+            pathways_processed += new_pathways
+
+    # Normalize counts w.r.t. frames analyzed and pathways found
+    # NOTE; currently counting all processed frames, while only
+    #       counting those endpoints for which any shortest path
+    #       were found - not considering those for which none were
+    unique_frames = len(frames_processed)
+    unique_pathways = len(pathways_processed)
+    frequencies = frequencies.divide(unique_frames * unique_pathways)
+
+    return frequencies, files_processed, frames_processed, pathways_processed
+
+

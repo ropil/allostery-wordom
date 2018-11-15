@@ -1,6 +1,6 @@
 import re
 import pandas as pd
-from collections import OrderedDict
+from collections import Counter, OrderedDict
 from ..internal.map import Map
 '''
  WORDOM file parsing interface
@@ -142,6 +142,67 @@ def read_correlations(infile):
     df = pd.DataFrame.from_dict(corr_dict,orient='index')
 
     return(df)
+
+
+def read_pathway_edge_frequencies(frame_file, residuemap):
+    """Process a WORDOM .frames file, returning raw edge counts
+    Based on initial work done by Björn Wallner, complemented and
+    almost completely rewritten by Robert Pilstål to consider edge
+    counts.
+
+    :param frame_file: file handle to WORDOM .frame-file
+    :param residuemap: dict mapping residue names to serial integers
+    :return: Pandas dataframe of raw edge counts, 
+             Counter of frames discovered and processed,
+             Counter of unique start and endpoints discovered & proc.
+    """
+    frequencies = {}
+    frames_processed = Counter()
+    pathways_processed = Counter()
+
+    m_framespec = re.compile('(\d+)\s+(\S+$)')
+    m_pathspec = re.compile("(.+=>.+$)")
+
+    for line in frame_file:
+        line = line.rstrip()
+
+        # Look for frame
+        framefound = m_framespec.search(line)
+        if framefound:
+            # Count frame
+            frame = int(framefound.group(1))
+            frames_processed[frame] +=1
+
+            # Look for path (not the NULL_PATH)
+            pathfound = m_pathspec.search(framefound.group(2))
+            if pathfound:
+                pathway = pathfound.group(1)
+
+                # Identify residues
+                residues = [residuemap[resname] for resname in pathway.split('=>')]
+
+                # Count endpoint tuples
+                pathways_processed[(residues[0], residues[-1])] += 1
+                
+                # Count edges along pathway
+                for i in range(len(residues) - 1):
+                    resa = residues[i]
+                    resb = residues[i + 1]
+
+                    # Create new counters if edge nodes not present
+                    if resa not in frequencies:
+                        frequencies[resa] = Counter()
+                    if resb not in frequencies:
+                        frequencies[resb] = Counter()
+
+                    # Count edge symmetrically
+                    frequencies[resa][resb] += 1
+                    frequencies[resb][resa] += 1
+
+    # Convert dictionary to DataFrame
+    df = pd.DataFrame.from_dict(frequencies,orient='index')
+
+    return df, frames_processed, pathways_processed
 
 
 def get_chain_offsets(chainlist, chainlength, chainpadding):
