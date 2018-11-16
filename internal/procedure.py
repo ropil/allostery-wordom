@@ -1,7 +1,7 @@
 from pymol import cmd
 from collections import Counter
 from pandas import DataFrame
-from ..interface.pymol import bond_connections_from_array, select_clusters, color_selections, show_cluster
+from ..interface.pymol import bond_colors_from_array, bond_connections_from_array, select_clusters, color_selections, show_cluster
 from ..interface.wordom import read_pathway_edge_frequencies
 from .matrix import matrix_to_colorarray
 
@@ -50,9 +50,10 @@ def draw_ciacg(cigraph, residuemap, pdb, cutoffs):
     return levels
 
 
-def highlight_pathways(pathways, residuemap):
+def highlight_pathways(pathways, residuemap, cutoff = 0.0):
     rgb_matrix = matrix_to_colorarray(pathways)
-    return rgb_matrix
+    colored, colors = bond_colors_from_array(rgb_matrix, residuemap, cutoff = cutoff)
+    return rgb_matrix, colored, colors
 
 def process_framefiles(framefiles, residuemap):
     """Procedure to read and normalize edge counts in multiple .frames
@@ -74,10 +75,11 @@ def process_framefiles(framefiles, residuemap):
         files_processed[frame] += 1
         with open(frame, 'r') as infile:
             new_frequencies, new_frames, new_pathways = read_pathway_edge_frequencies(infile, residuemap)
-            print(new_frequencies)
-            frequencies = frequencies.add(new_frequencies)
+            frequencies = frequencies.add(new_frequencies, fill_value = 0.0)
             frames_processed += new_frames
             pathways_processed += new_pathways
+
+    frequencies = frequencies.fillna(value = 0.0)
 
     print("Resulting in")
 

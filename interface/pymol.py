@@ -124,6 +124,36 @@ def bond_connections_from_array(interactiongraph, residuemap, cutoff=0.0):
     return shown
 
 
+def bond_colors_from_array(colorarray, residuemap, cutoff=0.0, colorprefix="path_"):
+    residues = list(residuemap.keys())
+    colored = []
+    colors = {}
+    colorindex = 0
+    # Expect rgb channels over first dimension
+    for i in range(colorarray.shape[1]):
+        for j in range(i, colorarray.shape[2]):
+            # Only draw bonds if interaction strength over cutoff threshold
+            resa = residues[i]
+            resb = residues[j]
+            colored.append((resa, resb))
+            a = "chain {} and resi {} and name CA".format(
+                resa.split(':')[0], resa.split(':')[1][1:])
+            b = "chain {} and resi {} and name CA".format(
+                resb.split(':')[0], resb.split(':')[1][1:])
+            #cmd.bond(a, b)
+            color = tuple(colorarray[0:3,i,j])
+            if color not in colors:
+                colorindex += 1
+                colors[color] = colorindex
+                cmd.set_color("{}{}".format(colorprefix, colorindex), color)
+            else:
+                colorindex = colors[color]
+            colorname = "{}{}".format(colorprefix, colorindex)
+            print("Applying color {}, named as {}, to residues {}".format(color, colorname, colored[-1]))
+            cmd.set_bond("stick_color", colorname, a, b)
+    return colored, colors
+
+
 def show_cluster(clusters):
     for cluster in clusters:
         for resi in cluster:

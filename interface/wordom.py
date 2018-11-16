@@ -201,6 +201,7 @@ def read_pathway_edge_frequencies(frame_file, residuemap):
 
     # Convert dictionary to DataFrame
     df = pd.DataFrame.from_dict(frequencies,orient='index')
+    df = df.fillna(value = 0.0)
 
     return df, frames_processed, pathways_processed
 

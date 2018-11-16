@@ -94,7 +94,7 @@ def main():
 
     frequencies, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
 
-    print(frequencies)
+    #print(frequencies)
 
     print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
 
@@ -104,7 +104,7 @@ def main():
     levels = draw_ciacg(cigraph, residuemap, pdb, cutoffs)
 
     # Highlight the pathways
-    rgb_matrix = highlight_pathways(pathways, residuemap)
+    rgb_matrix, colored, colors = highlight_pathways(pathways, residuemap)
 
 if __name__ == '__main__':
     main()
