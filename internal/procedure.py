@@ -55,6 +55,17 @@ def highlight_pathways(pathways, residuemap, cutoff = 0.0):
     colored, colors = bond_colors_from_array(rgb_matrix, residuemap, cutoff = cutoff)
     return rgb_matrix, colored, colors
 
+
+def normalize_pathway_counts_wrt_no_frames_and_endpoints(counts, frames, pathways):
+    # Normalize counts w.r.t. frames analyzed and pathways found
+    # NOTE; currently counting all processed frames, while only
+    #       counting those endpoints for which any shortest path
+    #       were found - not considering those for which none were
+    unique_frames = len(frames)
+    unique_pathways = len(pathways)
+    frequencies = counts.divide(unique_frames * unique_pathways)
+    return frequencies
+
 def process_framefiles(framefiles, residuemap):
     """Procedure to read and normalize edge counts in multiple .frames
 
@@ -85,13 +96,13 @@ def process_framefiles(framefiles, residuemap):
 
     print(frequencies)
 
-    # Normalize counts w.r.t. frames analyzed and pathways found
-    # NOTE; currently counting all processed frames, while only
-    #       counting those endpoints for which any shortest path
-    #       were found - not considering those for which none were
-    unique_frames = len(frames_processed)
-    unique_pathways = len(pathways_processed)
-    frequencies = frequencies.divide(unique_frames * unique_pathways)
+    #  # Normalize counts w.r.t. frames analyzed and pathways found
+    #  # NOTE; currently counting all processed frames, while only
+    #  #       counting those endpoints for which any shortest path
+    #  #       were found - not considering those for which none were
+    #  unique_frames = len(frames_processed)
+    #  unique_pathways = len(pathways_processed)
+    #  frequencies = frequencies.divide(unique_frames * unique_pathways)
 
     return frequencies, files_processed, frames_processed, pathways_processed
 

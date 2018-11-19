@@ -5,7 +5,8 @@ if __name__ == "__main__" and __package__ is None:
 import pymol
 from pymol import cmd
 
-from .internal.procedure import draw_ciacg, highlight_pathways, process_framefiles
+from .interface.files import dump_pyobject
+from .internal.procedure import draw_ciacg, highlight_pathways, normalize_pathway_counts_wrt_no_frames_and_endpoints,  process_framefiles
 from .internal.matrix import align_dataframes, matrix_from_pandas_dataframe
 
 import numpy
@@ -76,6 +77,12 @@ def main():
     parser.add_argument(
         "-pml", nargs='*', metavar="PMLfile", default=None, help="PyMOL scripts to run with cmd.run(), before coloring of bonds.")
     parser.add_argument(
+        "-cnt", nargs=1, metavar="COUNTfile", default=[None], help="Counts output file to write (.frm)")
+    parser.add_argument(
+        "-frq", nargs=1, metavar="FREQfile", default=[None], help="Normed frequency output file to write (.frm)")
+    parser.add_argument(
+        "-prc", nargs=1, metavar="PROCESSfile", default=[None], help="Processed frames and endpoints output file to write (.pyo), a tuple of Counter()s - (frames, endpoints).")
+    parser.add_argument(
         "-frames", nargs='*', metavar="FRAMEfile", help="WORDOM .frame files to process")
     arguments = parser.parse_args(argv[1:])
 
@@ -88,6 +95,9 @@ def main():
     acg = arguments.acg[0]
     rmp = arguments.rmp[0]
     pml = arguments.pml
+    cnt = arguments.cnt[0]
+    frq = arguments.frq[0]
+    prc = arguments.prc[0]
     frames = arguments.frames
 
     with open(acg, 'rb') as infile:
@@ -96,23 +106,26 @@ def main():
     with open(rmp, 'rb') as infile:
         residuemap = pickle.load(infile)
 
-    frequencies, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
-
-    print(frequencies)
+    counts, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
 
     print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
+
+    # Save counts
+    dump_pyobject(counts, cnt, suffix = "frm")
+
+    # Save processing Counter()s
+    dump_pyobject((frames_processed,pathways_processed), prc, suffix = "pyo")
+
+    # Normalize
+    frequencies = normalize_pathway_counts_wrt_no_frames_and_endpoints(counts, frames_processed, pathways_processed)
+
+    # Save frequencies
+    dump_pyobject(frequencies, frq, suffix = "frm")
 
     # Align tables
     frequencies_aligned, cigraph_table_aligned = align_dataframes(frequencies, cigraph_table, fill_value = 0.0)
 
     pathways = matrix_from_pandas_dataframe(frequencies_aligned)
-
-    print("Aligned frequencies")
-    print(frequencies_aligned)
-    print("Aligned cigraph")
-    print(cigraph_table_aligned)
-    print("Residuemap")
-    print(residuemap)
 
     # Draw the loaded ciACG
     cigraph = matrix_from_pandas_dataframe(cigraph_table_aligned)
