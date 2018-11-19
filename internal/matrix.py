@@ -1,4 +1,5 @@
 from numpy import add, around, divide, multiply, ones, subtract, zeros
+from pandas import DataFrame
 
 '''
  <Decription here>
@@ -16,6 +17,16 @@ from numpy import add, around, divide, multiply, ones, subtract, zeros
  See the License for the specific language governing permissions and
  limitations under the License.
 '''
+
+
+def dataframe_from_dictionary(data, indexmap = None, fillna = None):
+    # Convert dictionary to DataFrame
+    df = DataFrame.from_dict(data,orient='index')
+    if indexmap is not None:
+        df = df.rename(index = indexmap, columns = indexmap)
+    if fillna is not None:
+        df = df.fillna(value = fillna)
+    return df
 
 
 def matrix_from_interactions(interactions, mapping, default=0.0):
@@ -52,8 +63,12 @@ def matrix_to_colorarray(matrix, hue_from = (1.0, 1.0, 1.0), hue_to = (1.0, 0.0,
     """Converts a matrix into a color channel array
 
     :param matrix: matrix to convert
-    :param hue: tuple of hue-values, default three with first channel
-                1.0 and the rest 0.
+    :param hue_from: tuple of hue-values, starting color for null
+                     strength. Default three with first channel
+                    1.0 and the rest 0.
+    :param hue_to: tuple with ending hue-values, for max strength.
+                   Coloring will be interpolated between hue_from
+                   and hue_to.
     :param channel_max: Maximum level of channel, default 255.0
     :return: array with first dimension being number of channels,
              providing one matrix per channel over the other

@@ -29,6 +29,7 @@ def read_avg_strength(infile):
     m_end = re.compile("^===")
     m_entry = re.compile("^\s*.:.\d+\s+.:.\d+\s+\d+\.\d+\s+\d+\.\d+\s*$")
     interactions = {}
+    frequencies = {}
     reading = False
     for line in infile:
         if reading:
@@ -40,14 +41,17 @@ def read_avg_strength(infile):
                     [a, b, strength, freq] = line.split()
                     if not a in interactions:
                         interactions[a] = {}
+                        frequencies[a] = {}
                     if not b in interactions:
                         interactions[b] = {}
+                        frequencies[b] = {}
                     # Assign symmetrically
-                    interactions[a][b] = interactions[b][a] = (float(strength), float(freq))
+                    interactions[a][b] = interactions[b][a] = float(strength)
+                    frequencies[a][b] = frequencies[b][a] = float(freq)
         # Start reading when header found
         elif m_start.search(line):
             reading = True
-    return interactions
+    return interactions, frequencies
 
 
 def read_avg_clusters(infile):

@@ -129,6 +129,7 @@ def bond_colors_from_array(colorarray, residuemap, cutoff=0.0, colorprefix="path
     colored = []
     colors = {}
     colorindex = 0
+    numcolors = 0
     # Expect rgb channels over first dimension
     for i in range(colorarray.shape[1]):
         for j in range(i, colorarray.shape[2]):
@@ -143,7 +144,8 @@ def bond_colors_from_array(colorarray, residuemap, cutoff=0.0, colorprefix="path
             #cmd.bond(a, b)
             color = tuple(colorarray[0:3,i,j])
             if color not in colors:
-                colorindex += 1
+                colorindex = numcolors + 1
+                numcolors += 1
                 colors[color] = colorindex
                 cmd.set_color("{}{}".format(colorprefix, colorindex), color)
             else:
@@ -151,6 +153,8 @@ def bond_colors_from_array(colorarray, residuemap, cutoff=0.0, colorprefix="path
             colorname = "{}{}".format(colorprefix, colorindex)
             print("Applying color {}, named as {}, to residues {}".format(color, colorname, colored[-1]))
             cmd.set_bond("stick_color", colorname, a, b)
+
+    print(colors)
     return colored, colors
 
 

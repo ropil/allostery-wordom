@@ -9,7 +9,7 @@ from .interface.pymol import (bond_connections_from_array, color_selections,
                               select_clusters, show_cluster)
 from .interface.wordom import read_avg_strength, read_avg_residuemap, read_correlations
 from .internal.map import Map
-from .internal.matrix import matrix_from_interactions, matrix_from_pandas_dataframe
+from .internal.matrix import dataframe_from_dictionary, matrix_from_interactions, matrix_from_pandas_dataframe
 
 import numpy
 import matplotlib.pyplot as plt
@@ -80,7 +80,7 @@ def main():
         "-pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
     parser.add_argument("-plot", action="store_true", default=False, help="Plot ciACG value distribution")
     parser.add_argument(
-        "-acg", nargs=1, default=[None], metavar="ACGOUTfile", help="ACG file to write (.npy)")
+        "-acg", nargs=1, default=[None], metavar="ACGOUTfile", help="ACG file to write (.frm)")
     parser.add_argument(
         "-rmp", nargs=1, default=[None], metavar="RESOUTfile", help="ResidueMap output file to write (.rmp)")
     arguments = parser.parse_args(argv[1:])
@@ -102,19 +102,24 @@ def main():
         residuemap = read_avg_residuemap(infile)
         mapping = Map([int(i.split(':')[-1][1:]) for i in residuemap.keys()], inverse_sequence=list(range(len(residuemap))))
         infile.seek(0)
-        interactions = read_avg_strength(infile)
+        interactions, frequencies = read_avg_strength(infile)
 
-    (strength, frequency) = matrix_from_interactions(interactions, residuemap)
+    strength_table = dataframe_from_dictionary(interactions, indexmap = residuemap)
+    
 
     with open(cor, 'r') as infile:
         correlation_table = read_correlations(infile)
 
-    correlation = matrix_from_pandas_dataframe(correlation_table)
+    cigraph_table = strength_table.multiply(correlation_table, fill_value = 0.0)
 
-    cigraph = strength * correlation
 
     if acgout is not None:
-        numpy.save(acgout, cigraph)
+        outfilename = acgout
+        # Add proper file ending if not present
+        if acgout.split('.')[-1] != "frm":
+            outfilename += ".frm"
+        with open(outfilename, 'wb') as output:
+            dump(cigraph_table, output, HIGHEST_PROTOCOL)
 
     if rmpout is not None:
         outfilename = rmpout
@@ -123,6 +128,10 @@ def main():
             outfilename += ".rmp"
         with open(outfilename, 'wb') as output:
             dump(residuemap, output, HIGHEST_PROTOCOL)
+
+    print(cigraph_table)
+
+    cigraph = matrix_from_pandas_dataframe(cigraph_table)
 
     if ciplot:
          plt.figure()
