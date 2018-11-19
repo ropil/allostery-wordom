@@ -82,8 +82,11 @@ def process_framefiles(framefiles, residuemap):
     pathways_processed = Counter()
     frequencies = DataFrame()
 
+    numfiles = len(framefiles)
+
     for frame in framefiles:
         files_processed[frame] += 1
+        print("({} of {}) Processing: {}".format(sum(files_processed.values()), numfiles, frame))
         with open(frame, 'r') as infile:
             new_frequencies, new_frames, new_pathways = read_pathway_edge_frequencies(infile, residuemap)
             frequencies = frequencies.add(new_frequencies, fill_value = 0.0)
