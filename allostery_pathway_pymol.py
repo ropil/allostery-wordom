@@ -70,7 +70,7 @@ def main():
         "-pdb", nargs=1, metavar="PDBfile", help="PDB file to draw")
     parser.add_argument("-plot", action="store_true", default=False, help="Plot ciACG value distribution")
     parser.add_argument(
-        "-acg", nargs=1, metavar="ACGfile", help="ACG file to read (.npy)")
+        "-acg", nargs=1, metavar="ACGfile", help="ACG file to read (.frm)")
     parser.add_argument(
         "-rmp", nargs=1, metavar="RMPfile", help="ResidueMap file to read (.rmp)")
     parser.add_argument(
@@ -87,20 +87,37 @@ def main():
     rmp = arguments.rmp[0]
     frames = arguments.frames
 
-    cigraph = numpy.load(acg)
+    with open(acg, 'rb') as infile:
+        cigraph_table = pickle.load(infile)
 
     with open(rmp, 'rb') as infile:
         residuemap = pickle.load(infile)
 
     frequencies, files_processed, frames_processed, pathways_processed = process_framefiles(frames, residuemap)
 
-    #print(frequencies)
+    print(frequencies)
 
     print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
 
-    pathways = matrix_from_pandas_dataframe(frequencies)
+    # Align tables, using zero additions and fillna values
+    cigraph_table_zero = cigraph_table.copy()
+    cigraph_table_zero[:] = 0.0
+    frequencies_zero = frequencies.copy()
+    frequencies_zero[:] = 0.0
+    frequencies_aligned = frequencies.add(cigraph_table_zero, fill_value = 0.0)
+    cigraph_table_aligned = cigraph_table.add(frequencies_zero, fill_value = 0.0)
+
+    pathways = matrix_from_pandas_dataframe(frequencies_aligned)
+
+    print("Aligned frequencies")
+    print(frequencies_aligned)
+    print("Aligned cigraph")
+    print(cigraph_table_aligned)
+    print("Residuemap")
+    print(residuemap)
 
     # Draw the loaded ciACG
+    cigraph = matrix_from_pandas_dataframe(cigraph_table_aligned)
     levels = draw_ciacg(cigraph, residuemap, pdb, cutoffs)
 
     # Highlight the pathways
