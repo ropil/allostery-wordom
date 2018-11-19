@@ -129,8 +129,6 @@ def main():
     #      with open(outfilename, 'wb') as output:
     #          dump(residuemap, output, HIGHEST_PROTOCOL)
 
-    print(cigraph_table)
-
     cigraph = matrix_from_pandas_dataframe(cigraph_table)
 
     if ciplot:

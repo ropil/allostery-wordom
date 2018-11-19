@@ -95,18 +95,6 @@ def process_framefiles(framefiles, residuemap):
 
     frequencies = frequencies.fillna(value = 0.0)
 
-    print("Resulting in")
-
-    print(frequencies)
-
-    #  # Normalize counts w.r.t. frames analyzed and pathways found
-    #  # NOTE; currently counting all processed frames, while only
-    #  #       counting those endpoints for which any shortest path
-    #  #       were found - not considering those for which none were
-    #  unique_frames = len(frames_processed)
-    #  unique_pathways = len(pathways_processed)
-    #  frequencies = frequencies.divide(unique_frames * unique_pathways)
-
     return frequencies, files_processed, frames_processed, pathways_processed
 
 
