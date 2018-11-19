@@ -6,7 +6,7 @@ import pymol
 from pymol import cmd
 
 from .internal.procedure import draw_ciacg, highlight_pathways, process_framefiles
-from .internal.matrix import matrix_from_pandas_dataframe
+from .internal.matrix import align_dataframes, matrix_from_pandas_dataframe
 
 import numpy
 import matplotlib.pyplot as plt
@@ -74,7 +74,9 @@ def main():
     parser.add_argument(
         "-rmp", nargs=1, metavar="RMPfile", help="ResidueMap file to read (.rmp)")
     parser.add_argument(
-        "frames", nargs='*', metavar="FRAMEfile", help="WORDOM .frame files to process")
+        "-pml", nargs='*', metavar="PMLfile", default=None, help="PyMOL scripts to run with cmd.run(), before coloring of bonds.")
+    parser.add_argument(
+        "-frames", nargs='*', metavar="FRAMEfile", help="WORDOM .frame files to process")
     arguments = parser.parse_args(argv[1:])
 
     # Finish pymol launch
@@ -85,6 +87,7 @@ def main():
     cutoffs = [float(c) for c in arguments.c]
     acg = arguments.acg[0]
     rmp = arguments.rmp[0]
+    pml = arguments.pml
     frames = arguments.frames
 
     with open(acg, 'rb') as infile:
@@ -99,13 +102,8 @@ def main():
 
     print("{} pathways found in {} frames from {} files".format(len(pathways_processed), len(frames_processed), len(files_processed)))
 
-    # Align tables, using zero additions and fillna values
-    cigraph_table_zero = cigraph_table.copy()
-    cigraph_table_zero[:] = 0.0
-    frequencies_zero = frequencies.copy()
-    frequencies_zero[:] = 0.0
-    frequencies_aligned = frequencies.add(cigraph_table_zero, fill_value = 0.0)
-    cigraph_table_aligned = cigraph_table.add(frequencies_zero, fill_value = 0.0)
+    # Align tables
+    frequencies_aligned, cigraph_table_aligned = align_dataframes(frequencies, cigraph_table, fill_value = 0.0)
 
     pathways = matrix_from_pandas_dataframe(frequencies_aligned)
 
@@ -119,6 +117,11 @@ def main():
     # Draw the loaded ciACG
     cigraph = matrix_from_pandas_dataframe(cigraph_table_aligned)
     levels = draw_ciacg(cigraph, residuemap, pdb, cutoffs)
+
+    # Run scripts prior to coloring of bonds
+    if pml is not None:
+        for script in pml:
+            cmd.run(script)
 
     # Highlight the pathways
     rgb_matrix, colored, colors = highlight_pathways(pathways, residuemap)

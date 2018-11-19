@@ -19,7 +19,33 @@ from pandas import DataFrame
 '''
 
 
+def align_dataframes(framea, frameb, fill_value = 0.0):
+    """Use pandas DataFrame structure to align two-dimensional data
+
+    :param framea: First pandas dataframe to align
+    :param frameb: Other pandas dataframe to align
+    :param fill_value: default fill value (0.0 float)
+    return: tuple of aligned frames
+    """
+    zeroframe = frameb.copy()
+    zeroframe[:] = fill_value
+    aligneda = framea.add(zeroframe, fill_value = fill_value)
+    zeroframe = framea.copy()
+    zeroframe[:] = fill_value
+    alignedb = frameb.add(zeroframe, fill_value = fill_value)
+    return aligneda, alignedb
+
+
 def dataframe_from_dictionary(data, indexmap = None, fillna = None):
+    """Create a pandas dataframe from dictionary of dicts
+
+    :param data: dictionary of dicts
+    :param indexmap: a dictionary for mapping indices to new names,
+                     if None, no mapping will be done (default)
+    :param fillna: value to fill missing values with. If None, no
+                   filling will be done (default)
+    :return: pandas dataframe
+    """
     # Convert dictionary to DataFrame
     df = DataFrame.from_dict(data,orient='index')
     if indexmap is not None:
