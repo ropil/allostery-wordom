@@ -5,6 +5,7 @@ if __name__ == "__main__" and __package__ is None:
 import pymol
 from pymol import cmd
 
+from .interface.files import dump_pyobject
 from .interface.pymol import (bond_connections_from_array, color_selections,
                               select_clusters, show_cluster)
 from .interface.wordom import read_avg_strength, read_avg_residuemap, read_correlations
@@ -14,8 +15,6 @@ from .internal.matrix import dataframe_from_dictionary, matrix_from_interactions
 import numpy
 import matplotlib.pyplot as plt
 from pandas import DataFrame
-
-from pickle import dump, HIGHEST_PROTOCOL
 '''
  Display the ciACG in an interactive PyMOL session
  Copyright (C) 2018  Robert Pilstål
@@ -112,22 +111,23 @@ def main():
 
     cigraph_table = strength_table.multiply(correlation_table, fill_value = 0.0)
 
+    dump_pyobject(cigraph_table, acgout, suffix = "frm")
+    #  if acgout is not None:
+    #      outfilename = acgout
+    #      # Add proper file ending if not present
+    #      if acgout.split('.')[-1] != "frm":
+    #          outfilename += ".frm"
+    #      with open(outfilename, 'wb') as output:
+    #          dump(cigraph_table, output, HIGHEST_PROTOCOL)
 
-    if acgout is not None:
-        outfilename = acgout
-        # Add proper file ending if not present
-        if acgout.split('.')[-1] != "frm":
-            outfilename += ".frm"
-        with open(outfilename, 'wb') as output:
-            dump(cigraph_table, output, HIGHEST_PROTOCOL)
-
-    if rmpout is not None:
-        outfilename = rmpout
-        # Add proper file ending if not present
-        if rmpout.split('.')[-1] != "rmp":
-            outfilename += ".rmp"
-        with open(outfilename, 'wb') as output:
-            dump(residuemap, output, HIGHEST_PROTOCOL)
+    dump_pyobject(residuemap, rmpout, suffix = "rmp")
+    #  if rmpout is not None:
+    #      outfilename = rmpout
+    #      # Add proper file ending if not present
+    #      if rmpout.split('.')[-1] != "rmp":
+    #          outfilename += ".rmp"
+    #      with open(outfilename, 'wb') as output:
+    #          dump(residuemap, output, HIGHEST_PROTOCOL)
 
     print(cigraph_table)
 
